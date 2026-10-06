@@ -596,12 +596,182 @@ function tick(){
 }
 tick(); setInterval(tick, 10000);
 
+// ============ البيانات الحية من n8n ============
+const FEED_URL = "https://a249a.app.n8n.cloud/webhook/health-dashboard";
+
+function fmtBig(n){
+  n = Number(n) || 0;
+  if (n >= 1e9) return (n/1e9).toFixed(1) + "B";
+  if (n >= 1e6) return (n/1e6).toFixed(1) + "M";
+  if (n >= 1e3) return (n/1e3).toFixed(1) + "K";
+  return n.toLocaleString("en-US");
+}
+
+function timeAgo(iso){
+  if (!iso) return "لا يوجد تحديث";
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return "الآن";
+  if (diff < 3600) return `قبل ${Math.floor(diff/60)} دقيقة`;
+  if (diff < 86400) return `قبل ${Math.floor(diff/3600)} ساعة`;
+  return `قبل ${Math.floor(diff/86400)} يوم`;
+}
+
+function applyLiveData(d){
+  if (!d || d.status === 'empty') return;
+
+  // KPIs
+  if (d.mentions_today != null) document.getElementById("kMentions").textContent = fmtBig(d.mentions_today);
+  if (d.reach != null) document.getElementById("kReach").textContent = fmtBig(d.reach);
+  if (d.engagement != null) document.getElementById("kEng").textContent = fmtBig(d.engagement);
+  if (d.views != null) document.getElementById("kViews").textContent = fmtBig(d.views);
+
+  // المدن
+  if (Array.isArray(d.top_cities) && d.top_cities.length) {
+    document.getElementById("citiesList").innerHTML = "";
+    const max = Math.max(...d.top_cities.map(c => c.count));
+    const colors = ["var(--sky)", "var(--navy)", "var(--sky)", "var(--teal)", "var(--sky-light)"];
+    d.top_cities.slice(0, 5).forEach((c, i) => {
+      const row = document.createElement("div");
+      row.className = "city-row";
+      row.style.animationDelay = (i * 80) + "ms";
+      row.innerHTML = `<div class="city-name">${c.name}</div><div class="city-bar"><i style="background:${colors[i]}"></i></div><div class="city-count">${c.count}</div>`;
+      document.getElementById("citiesList").appendChild(row);
+      requestAnimationFrame(() => { row.querySelector("i").style.width = ((c.count / max) * 100) + "%"; });
+    });
+  }
+
+  // الهاشتاقات
+  if (Array.isArray(d.top_hashtags) && d.top_hashtags.length) {
+    document.getElementById("hashtagsList").innerHTML = "";
+    const max = Math.max(...d.top_hashtags.map(h => h.count));
+    const colors = ["var(--sky)", "var(--navy)", "var(--sky)", "var(--teal)", "var(--sky-light)"];
+    d.top_hashtags.slice(0, 5).forEach((h, i) => {
+      const row = document.createElement("div");
+      row.className = "ht-row";
+      row.style.animationDelay = (i * 100) + "ms";
+      row.innerHTML = `<div class="ht-name" title="${h.tag}">${h.tag}</div><div class="ht-bar"><i style="background:${colors[i]}"></i></div><div class="ht-count">${h.count}</div>`;
+      document.getElementById("hashtagsList").appendChild(row);
+      requestAnimationFrame(() => { row.querySelector("i").style.width = ((h.count / max) * 100) + "%"; });
+    });
+  }
+
+  // المنصات
+  if (Array.isArray(d.platforms) && d.platforms.length) {
+    document.getElementById("platformRows").innerHTML = "";
+    const max = Math.max(...d.platforms.map(p => p.count || p.val || 0));
+    const colors = ["var(--sky)", "var(--navy)", "var(--teal)", "var(--sky-light)", "var(--muted)", "var(--warn)"];
+    d.platforms.slice(0, 6).forEach((p, i) => {
+      const val = p.count ?? p.val ?? 0;
+      const row = document.createElement("div");
+      row.className = "platform-row";
+      row.innerHTML = `<div class="pname">${p.name}</div><div class="bar"><i style="background:${colors[i]}"></i></div><div class="pval">${val.toLocaleString("en-US")}</div>`;
+      document.getElementById("platformRows").appendChild(row);
+      requestAnimationFrame(() => { row.querySelector("i").style.width = ((val / max) * 100) + "%"; });
+    });
+  }
+
+  // المشاعر
+  if (d.sentiment && typeof d.sentiment.positive === 'number') {
+    const positive = d.sentiment.positive;
+    const c = document.getElementById("gaugeVal");
+    const L = 2 * Math.PI * 50;
+    c.style.strokeDasharray = L;
+    requestAnimationFrame(() => { c.style.strokeDashoffset = L * (1 - positive/100); });
+    document.getElementById("gaugeNum").textContent = positive + "٪";
+    document.querySelector(".senti-legend").innerHTML =
+      `<div><span class="dot" style="background:var(--pos)"></span> إيجابي ${d.sentiment.positive}٪</div>
+       <div><span class="dot" style="background:var(--warn)"></span> محايد ${d.sentiment.neutral}٪</div>
+       <div><span class="dot" style="background:var(--neg)"></span> سلبي ${d.sentiment.negative}٪</div>`;
+  }
+
+  // آخر المنشن
+  if (Array.isArray(d.feed_items) && d.feed_items.length) {
+    window._feedItems = d.feed_items.slice();
+    renderFeedLive();
+  }
+
+  // أعلى منشور
+  if (Array.isArray(d.top_posts) && d.top_posts.length) {
+    const p = d.top_posts[0];
+    document.getElementById("topPostBody").textContent = p.text;
+    document.querySelector(".toppost .src-chip").textContent = p.source;
+    document.querySelector(".toppost .post-meta").innerHTML =
+      `<span>تفاعل <b>${(p.engagement||0).toLocaleString("en-US")}</b></span>
+       <span>وصول <b>${fmtBig(p.reach||0)}</b></span>`;
+  }
+
+  // رسم الترند الحقيقي
+  if (Array.isArray(d.engagement_series) && d.engagement_series.length) {
+    drawTrendFromSeries(d.engagement_series);
+  }
+
+  // آخر تحديث
+  if (d.cache_updated_at) {
+    document.getElementById("lastupd").textContent = timeAgo(d.cache_updated_at);
+  }
+}
+
+function renderFeedLive(){
+  const list = document.getElementById("feedList");
+  const items = window._feedItems || [];
+  const shown = items.slice(0, 5);
+  list.innerHTML = shown.map(it => {
+    const author = it.author ? `${it.platform} <span class="fi-dot">·</span> ${it.author}` : it.platform;
+    return `<div class="feed-item"><div class="fi-text">${it.text}</div><div class="fi-meta"><span class="fi-source">${author}</span></div></div>`;
+  }).join("");
+}
+
+function drawTrendFromSeries(series){
+  const svg = document.getElementById("engSvg");
+  if (!svg || !series.length) return;
+  const values = series.map(d => d.value || 0);
+  const W = 600, H = 100, pad = 6;
+  const max = Math.max(...values, 1) * 1.15;
+  const step = (W - pad*2) / Math.max(series.length - 1, 1);
+  const pts = values.map((v, i) => [pad + i*step, H - pad - (v/max)*(H - pad*2)]);
+  const line = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+  const area = line + ` L${pts[pts.length-1][0].toFixed(1)},${H} L${pts[0][0].toFixed(1)},${H} Z`;
+  svg.innerHTML = `
+    <defs><linearGradient id="engFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2DA5E1" stop-opacity=".4"/>
+      <stop offset="1" stop-color="#2DA5E1" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${area}" fill="url(#engFill)"/>
+    <path d="${line}" fill="none" stroke="#1E2D78" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+  `;
+}
+
+async function fetchLive(){
+  try {
+    const r = await fetch(FEED_URL + "?t=" + Date.now());
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const data = await r.json();
+    applyLiveData(data);
+    console.log("Live data loaded", data);
+  } catch(e) {
+    console.warn("Live fetch failed, using fallback", e);
+  }
+}
+
+// نرسم البيانات الوهمية أولاً كـ fallback
 renderCities();
 renderHashtags();
 renderPlatforms();
 renderFeed();
 drawGauge();
 drawEngagementTrend();
+
+// ثم نسحب البيانات الحية فوراً
+fetchLive();
+
+// نحدّث كل ١٥ دقيقة
+setInterval(fetchLive, 15 * 60 * 1000);
+
+// نحدّث عداد "آخر تحديث" كل دقيقة
+setInterval(() => {
+  const el = document.getElementById("lastupd");
+  if (window._lastUpdate) el.textContent = timeAgo(window._lastUpdate);
+}, 60000);
 </script>
 </body>
 </html>
