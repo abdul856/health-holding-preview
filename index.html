@@ -89,10 +89,10 @@
   #clock{
     font-size:30px;font-weight:300;font-variant-numeric:tabular-nums;
     letter-spacing:1px;line-height:1.2;color:var(--navy);
-    display:inline-flex;align-items:baseline;gap:4px;
+    direction:ltr;unicode-bidi:isolate;
   }
   #clock .sec{font-size:18px;color:var(--sky);font-weight:500;opacity:.75}
-  #clock .ampm{font-size:14px;color:var(--muted);margin-right:4px;font-weight:500}
+  #clock .ampm{font-size:14px;color:var(--muted);margin-left:6px;font-weight:500;vertical-align:baseline}
   #dateline{color:var(--muted);font-size:13px;margin-top:4px;line-height:1.4}
   .live{
     display:inline-flex;align-items:center;gap:10px;
@@ -681,10 +681,11 @@ function tick(){
   const apAr = /AM|am/.test(ap) ? "ص" : "م";
   const clockEl = document.getElementById("clock");
   if (clockEl) {
+    // LTR string so colons line up correctly between HH:MM:SS
     clockEl.innerHTML =
-      `<span class="ampm">${apAr}</span>` +
       `${toArDigits(hh)}:${toArDigits(mm)}` +
-      `<span class="sec">:${toArDigits(ss)}</span>`;
+      `<span class="sec">:${toArDigits(ss)}</span>` +
+      `<span class="ampm">${apAr}</span>`;
   }
   const dateEl = document.getElementById("dateline");
   if (dateEl) {
