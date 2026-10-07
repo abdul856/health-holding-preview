@@ -101,37 +101,6 @@
     box-shadow:var(--shadow);
   }
   .live-dot{width:9px;height:9px;border-radius:50%;background:var(--sky);animation:blink 2s infinite}
-  /* ===== شريط الفحص الصحي ===== */
-  .health{
-    display:inline-flex;align-items:center;gap:10px;
-    background:var(--panel);border:1px solid var(--line);
-    border-radius:999px;padding:8px 16px;font-size:13px;color:var(--muted);
-    box-shadow:var(--shadow);font-weight:500;
-  }
-  .health .dot{
-    width:10px;height:10px;border-radius:50%;
-    background:#9CA3AF;position:relative;flex:none;
-  }
-  .health.ok .dot{background:#10B981;box-shadow:0 0 0 0 rgba(16,185,129,.5);animation:pulse-ok 2s infinite}
-  .health.warn .dot{background:#F59E0B;animation:pulse-warn 1.5s infinite}
-  .health.err .dot{background:#EF4444;animation:pulse-err 1s infinite}
-  .health.ok .status-text{color:#059669;font-weight:700}
-  .health.warn .status-text{color:#D97706;font-weight:700}
-  .health.err .status-text{color:#DC2626;font-weight:700}
-  .health .divider{color:var(--line)}
-  .health .status-text{font-size:13px}
-  .health .meta{color:var(--muted);font-size:12px}
-  @keyframes pulse-ok{
-    0%{box-shadow:0 0 0 0 rgba(16,185,129,.5)}
-    70%{box-shadow:0 0 0 8px rgba(16,185,129,0)}
-    100%{box-shadow:0 0 0 0 rgba(16,185,129,0)}
-  }
-  @keyframes pulse-warn{
-    0%,100%{opacity:1}50%{opacity:.5}
-  }
-  @keyframes pulse-err{
-    0%,100%{opacity:1}50%{opacity:.4}
-  }
   #fsBtn{
     display:inline-flex;align-items:center;gap:8px;
     background:var(--panel);border:1px solid var(--line);
@@ -393,13 +362,8 @@
       <small>Powered by <b>tact</b> Digital Marketing</small>
     </div>
   </div>
-  <div style="display:flex;align-items:center;gap:10px">
-    <div id="healthPill" class="health ok" title="حالة الاتصال بالبيانات">
-      <span class="dot"></span>
-      <span class="status-text">الاتصال سليم</span>
-      <span class="divider">·</span>
-      <span class="meta"><span id="lastupd">—</span></span>
-    </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="live"><span class="live-dot"></span> بث مباشر — آخر تحديث <span id="lastupd">—</span></div>
     <button id="fsBtn" title="ملء الشاشة">⛶ ملء الشاشة</button>
   </div>
   <div class="clockbox">
@@ -697,44 +661,6 @@ function tick(){
 }
 tick(); setInterval(tick, 1000);
 
-// ============ وضع الفحص الصحي ============
-// يُستدعى من applyLiveData وعند أي فشل في fetchLive
-window.__healthState = { lastFetchOk: null, lastUpdatedAt: null, errorMsg: null };
-
-function setHealth(status, lastUpdatedIso, extraMsg){
-  const pill = document.getElementById("healthPill");
-  const txt  = pill ? pill.querySelector(".status-text") : null;
-  const meta = document.getElementById("lastupd");
-  if (!pill || !txt) return;
-  pill.classList.remove("ok", "warn", "err");
-  pill.classList.add(status);
-  if (status === "ok") {
-    txt.textContent = "الاتصال سليم";
-  } else if (status === "warn") {
-    txt.textContent = "تحديث متأخر";
-  } else {
-    txt.textContent = extraMsg ? "تعذّر الاتصال" : "لا توجد بيانات";
-  }
-  if (lastUpdatedIso) {
-    meta.textContent = "آخر تحديث " + timeAgo(lastUpdatedIso);
-  } else if (extraMsg) {
-    meta.textContent = extraMsg;
-  }
-}
-
-// تحديث نص "آخر تحديث" كل ٣٠ ثانية بناءً على آخر وقت ناجح
-function refreshHealthClock(){
-  const s = window.__healthState;
-  if (!s.lastUpdatedAt) return;
-  const ageMin = (Date.now() - new Date(s.lastUpdatedAt).getTime()) / 60000;
-  // أخضر لأقل من ٦٠ دقيقة، أصفر لأقل من ٣ ساعات، أحمر لأكثر
-  let status = "ok";
-  if (ageMin > 180) status = "err";
-  else if (ageMin > 60) status = "warn";
-  setHealth(status, s.lastUpdatedAt, null);
-}
-setInterval(refreshHealthClock, 30000);
-
 // ============ البيانات الحية من n8n ============
 const FEED_URL = "https://a249a.app.n8n.cloud/webhook/health-dashboard";
 
@@ -893,12 +819,10 @@ function applyLiveData(d){
     drawTrendFromSeries(d.engagement_series);
   }
 
-  // آخر تحديث + حالة الفحص الصحي
+  // آخر تحديث
   if (d.cache_updated_at) {
     window._lastUpdate = d.cache_updated_at;
-    window.__healthState.lastUpdatedAt = d.cache_updated_at;
-    window.__healthState.lastFetchOk = Date.now();
-    refreshHealthClock();
+    document.getElementById("lastupd").textContent = timeAgo(d.cache_updated_at);
   }
 }
 
@@ -944,8 +868,6 @@ async function fetchLive(){
     console.log("Live data loaded", data);
   } catch(e) {
     console.warn("Live fetch failed, using fallback", e);
-    // نحدّث حالة الفحص إلى خطأ إذا فشلت ثلاث محاولات متتالية (أو ما توفرت بيانات مؤقتاً)
-    setHealth("err", null, "تعذّر الاتصال بالخادم");
   }
 }
 
@@ -963,9 +885,10 @@ fetchLive();
 // نحدّث كل ١٥ دقيقة
 setInterval(fetchLive, 15 * 60 * 1000);
 
-// نحدّث عداد "آخر تحديث" كل دقيقة (مع الفحص الصحي)
+// نحدّث عداد "آخر تحديث" كل دقيقة
 setInterval(() => {
-  if (window._lastUpdate) refreshHealthClock();
+  const el = document.getElementById("lastupd");
+  if (window._lastUpdate) el.textContent = timeAgo(window._lastUpdate);
 }, 60000);
 </script>
 </body>
