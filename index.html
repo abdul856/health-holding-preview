@@ -159,7 +159,7 @@
   .ht-bar i{display:block;height:100%;border-radius:999px;width:0;transition:width 1s ease}
   .ht-count{font-size:14px;color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums;min-width:30px;text-align:end}
 
-  /* بطاقة التجمعات الصحية - كحلي غامق زي بطاقات موقعهم */
+  /* بطاقة التجمعات الصحية - قائمة أعلى التجمعات تفاعلاً */
   .clusters-card{
     grid-column:3;grid-row:2;overflow:hidden;
     display:flex;flex-direction:column;
@@ -174,31 +174,56 @@
     position:absolute;
     bottom:-30px;left:-30px;
     width:120px;height:120px;
-    background:radial-gradient(circle, rgba(45, 165, 225, 0.25) 0%, transparent 70%);
+    background:radial-gradient(circle, rgba(45, 165, 225, 0.18) 0%, transparent 70%);
     pointer-events:none;
   }
-  .clusters-card .label{color:rgba(255,255,255,0.75)}
-  .clusters-big{
-    font-size:76px;font-weight:800;line-height:1;
-    color:var(--sky-light);
-    margin-top:14px;
-    font-variant-numeric:tabular-nums;
-    letter-spacing:-3px;
-    animation:kwIn .8s ease both;
-    position:relative;z-index:1;
+  .clusters-card .label{color:rgba(255,255,255,0.85)}
+  .clusters-list{margin-top:12px;display:flex;flex-direction:column;gap:8px;flex:1;position:relative;z-index:1}
+  .cl-row{display:flex;align-items:center;gap:10px;animation:kwIn .5s ease both}
+  .cl-name{font-size:13px;color:#FFFFFF;font-weight:600;min-width:95px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cl-bar{flex:1;height:9px;background:rgba(255,255,255,0.15);border-radius:999px;overflow:hidden}
+  .cl-bar i{display:block;height:100%;border-radius:999px;width:0;background:var(--sky-light);transition:width 1s ease}
+  .cl-count{font-size:13px;color:var(--sky-light);font-weight:800;font-variant-numeric:tabular-nums;min-width:25px;text-align:end}
+  .cl-empty{color:rgba(255,255,255,0.5);font-size:13px;text-align:center;padding-top:20px}
+
+  /* KPI Delta مؤشرات التغير */
+  .delta .pct{font-weight:800;font-variant-numeric:tabular-nums}
+  .delta .muted-sm{color:var(--muted);font-weight:500;font-size:12px}
+  .delta.pos .pct{color:var(--pos)}
+  .delta.neg .pct{color:var(--neg)}
+  .delta.flat .pct{color:var(--muted)}
+
+  /* Featured News Card */
+  .featured-wrap{margin-top:12px;flex:1;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+  .fn-image{
+    width:100%;aspect-ratio:16/9;
+    background:var(--sky-pale) center/cover no-repeat;
+    border-radius:12px;
+    position:relative;overflow:hidden;
+    flex-shrink:0;
   }
-  .clusters-sub{color:rgba(255,255,255,0.85);font-size:15px;font-weight:600;margin-top:4px;position:relative;z-index:1}
-  .clusters-desc{color:rgba(255,255,255,0.6);font-size:12px;font-weight:500;margin-top:10px;line-height:1.6;position:relative;z-index:1}
-  .clusters-badge{
-    display:inline-flex;align-items:center;gap:6px;
-    margin-top:auto;
-    background:rgba(45, 165, 225, 0.25);
-    color:var(--sky-light);
-    padding:6px 14px;border-radius:999px;
-    font-size:12px;font-weight:700;
-    border:1px solid rgba(45, 165, 225, 0.4);
-    align-self:flex-start;
-    position:relative;z-index:1;
+  .fn-image.no-image{
+    background:linear-gradient(135deg, var(--sky-pale) 0%, var(--panel-2) 100%);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--navy);font-size:48px;opacity:0.5;
+  }
+  .fn-image.no-image::after{content:"📰"}
+  .fn-body{flex:1;display:flex;flex-direction:column;gap:8px;min-height:0}
+  .fn-title{
+    font-size:15px;line-height:1.6;color:var(--navy);font-weight:700;
+    overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
+  }
+  .fn-meta{display:flex;gap:10px;color:var(--muted);font-size:12px;font-weight:600;margin-top:auto;padding-top:8px;border-top:1px solid var(--line);flex-wrap:wrap}
+  .fn-meta .fn-sources{color:var(--sky);font-weight:700}
+  .fn-meta .fn-reach{color:var(--navy);font-weight:700}
+
+  /* Feed item - عدد الصحف لنفس الخبر */
+  .feed-item .fi-badge{
+    display:inline-block;
+    background:var(--sky-pale);color:var(--sky);
+    padding:1px 8px;border-radius:999px;
+    font-size:11px;font-weight:700;
+    margin-inline-start:6px;
   }
 
   .sentiment-card{grid-column:4;grid-row:2;align-items:stretch}
@@ -345,23 +370,23 @@
   <section class="scene" id="scene1">
     <div class="card kpi-card">
       <div class="label">إجمالي المنشن</div>
-      <div class="kpi" id="kMentions">5,284</div>
-      <div class="delta up">▲ اليوم</div>
+      <div class="kpi" id="kMentions">—</div>
+      <div class="delta" id="kMentionsDelta"><span class="pct">— </span><span class="muted-sm">عن أمس</span></div>
     </div>
     <div class="card kpi-card">
       <div class="label">الوصول التقديري</div>
-      <div class="kpi" id="kReach">8.7M</div>
-      <div class="delta up">▲ اليوم</div>
+      <div class="kpi" id="kReach">—</div>
+      <div class="delta" id="kReachDelta"><span class="pct">— </span><span class="muted-sm">عن أمس</span></div>
     </div>
     <div class="card kpi-card">
       <div class="label">التفاعل</div>
-      <div class="kpi" id="kEng">312K</div>
-      <div class="delta up">▲ اليوم</div>
+      <div class="kpi" id="kEng">—</div>
+      <div class="delta" id="kEngDelta"><span class="pct">— </span><span class="muted-sm">عن أمس</span></div>
     </div>
     <div class="card kpi-card">
       <div class="label">الانطباعات</div>
-      <div class="kpi" id="kViews">6.4M</div>
-      <div class="delta up">▲ اليوم</div>
+      <div class="kpi" id="kViews">—</div>
+      <div class="delta" id="kViewsDelta"><span class="pct">— </span><span class="muted-sm">عن أمس</span></div>
     </div>
 
     <div class="card cities-card">
@@ -379,11 +404,10 @@
     </div>
 
     <div class="card clusters-card">
-      <div class="label">🏥 شبكة التجمعات الصحية</div>
-      <div class="clusters-big">20</div>
-      <div class="clusters-sub">تجمع صحي</div>
-      <div class="clusters-desc">تخدم جميع مناطق المملكة العربية السعودية</div>
-      <div class="clusters-badge">✓ تغطية شاملة</div>
+      <div class="label">🏥 أعلى التجمعات تفاعلاً اليوم</div>
+      <div class="clusters-list" id="clustersList">
+        <div class="cl-empty">— بانتظار بيانات اليوم —</div>
+      </div>
     </div>
 
     <div class="card sentiment-card">
@@ -410,17 +434,21 @@
     </div>
 
     <div class="card toppost">
-      <div class="label">أعلى منشور تفاعلاً <span class="src-chip">لينكدإن</span></div>
-      <div class="post-body" id="topPostBody">"الصحة القابضة تختتم المرحلة الثانية من انتقال منسوبي وزارة الصحة إلى 7 تجمعات صحية، بعد أن تجاوزت نسبة قبول عروض الانتقال 99% ممن أبدوا رغباتهم، ضمن إجراءات شملت أكثر من 68 ألف موظف وموظفة من الكوادر الصحية والإدارية 🏥"</div>
-      <div class="post-meta">
-        <span>تفاعل <b>28,671</b></span>
-        <span>وصول <b>1.2M</b></span>
-        <span>@HealthCo_sa</span>
+      <div class="label">⭐ أبرز خبر اليوم</div>
+      <div class="featured-wrap" id="featuredNews">
+        <div class="fn-image" id="fnImage"></div>
+        <div class="fn-body">
+          <div class="fn-title" id="fnTitle">— بانتظار البيانات —</div>
+          <div class="fn-meta">
+            <span class="fn-sources" id="fnSources"></span>
+            <span class="fn-reach" id="fnReach"></span>
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="card platforms-card">
-      <div class="label">توزيع المنشن حسب المنصة</div>
+      <div class="label">📰 أعلى الصحف تغطية اليوم</div>
       <div id="platformRows"></div>
     </div>
   </section>
@@ -616,14 +644,32 @@ function timeAgo(iso){
   return `قبل ${Math.floor(diff/86400)} يوم`;
 }
 
+function setDelta(elId, pctVal) {
+  const el = document.getElementById(elId);
+  if (!el || pctVal == null) return;
+  const n = Number(pctVal);
+  const sign = n > 0 ? "▲" : n < 0 ? "▼" : "●";
+  const cls = n > 0 ? "pos" : n < 0 ? "neg" : "flat";
+  const abs = Math.abs(n);
+  el.className = "delta " + cls;
+  el.innerHTML = `<span class="pct">${sign} ${abs}٪</span> <span class="muted-sm">عن أمس</span>`;
+}
+
 function applyLiveData(d){
   if (!d || d.status === 'empty') return;
 
-  // KPIs
+  // KPIs مع مؤشرات التغير
   if (d.mentions_today != null) document.getElementById("kMentions").textContent = fmtBig(d.mentions_today);
   if (d.reach != null) document.getElementById("kReach").textContent = fmtBig(d.reach);
   if (d.engagement != null) document.getElementById("kEng").textContent = fmtBig(d.engagement);
   if (d.views != null) document.getElementById("kViews").textContent = fmtBig(d.views);
+
+  if (d.comparison) {
+    setDelta("kMentionsDelta", d.comparison.mentions_pct);
+    setDelta("kReachDelta", d.comparison.reach_pct);
+    setDelta("kEngDelta", d.comparison.engagement_pct);
+    setDelta("kViewsDelta", d.comparison.views_pct);
+  }
 
   // المدن
   if (Array.isArray(d.top_cities) && d.top_cities.length) {
@@ -655,16 +701,35 @@ function applyLiveData(d){
     });
   }
 
-  // المنصات
-  if (Array.isArray(d.platforms) && d.platforms.length) {
+  // أعلى التجمعات الصحية (استبدلت شبكة التجمعات)
+  const clustersList = document.getElementById("clustersList");
+  if (clustersList && Array.isArray(d.top_clusters) && d.top_clusters.length) {
+    clustersList.innerHTML = "";
+    const max = Math.max(...d.top_clusters.map(c => c.count));
+    d.top_clusters.slice(0, 6).forEach((c, i) => {
+      const row = document.createElement("div");
+      row.className = "cl-row";
+      row.style.animationDelay = (i * 80) + "ms";
+      row.innerHTML = `<div class="cl-name">${c.name}</div><div class="cl-bar"><i></i></div><div class="cl-count">${c.count}</div>`;
+      clustersList.appendChild(row);
+      requestAnimationFrame(() => { row.querySelector("i").style.width = ((c.count / max) * 100) + "%"; });
+    });
+  } else if (clustersList) {
+    clustersList.innerHTML = '<div class="cl-empty">— لا توجد إشارات لتجمعات محددة اليوم —</div>';
+  }
+
+  // أعلى الصحف تغطية (استبدلت توزيع المنصات)
+  if (Array.isArray(d.top_sources) && d.top_sources.length) {
     document.getElementById("platformRows").innerHTML = "";
-    const max = Math.max(...d.platforms.map(p => p.count || p.val || 0));
+    const max = Math.max(...d.top_sources.map(p => p.count || 0));
     const colors = ["var(--sky)", "var(--navy)", "var(--teal)", "var(--sky-light)", "var(--muted)", "var(--warn)"];
-    d.platforms.slice(0, 6).forEach((p, i) => {
-      const val = p.count ?? p.val ?? 0;
+    d.top_sources.slice(0, 6).forEach((p, i) => {
+      const val = p.count || 0;
       const row = document.createElement("div");
       row.className = "platform-row";
-      row.innerHTML = `<div class="pname">${p.name}</div><div class="bar"><i style="background:${colors[i]}"></i></div><div class="pval">${val.toLocaleString("en-US")}</div>`;
+      // نقصّر اسم الصحيفة لو طويل
+      const name = String(p.name).length > 20 ? String(p.name).slice(0, 18) + '…' : p.name;
+      row.innerHTML = `<div class="pname" title="${p.name}">${name}</div><div class="bar"><i style="background:${colors[i]}"></i></div><div class="pval">${val.toLocaleString("en-US")}</div>`;
       document.getElementById("platformRows").appendChild(row);
       requestAnimationFrame(() => { row.querySelector("i").style.width = ((val / max) * 100) + "%"; });
     });
@@ -690,14 +755,26 @@ function applyLiveData(d){
     renderFeedLive();
   }
 
-  // أعلى منشور
-  if (Array.isArray(d.top_posts) && d.top_posts.length) {
-    const p = d.top_posts[0];
-    document.getElementById("topPostBody").textContent = p.text;
-    document.querySelector(".toppost .src-chip").textContent = p.source;
-    document.querySelector(".toppost .post-meta").innerHTML =
-      `<span>تفاعل <b>${(p.engagement||0).toLocaleString("en-US")}</b></span>
-       <span>وصول <b>${fmtBig(p.reach||0)}</b></span>`;
+  // ⭐ أبرز خبر اليوم (استبدل أعلى منشور تفاعلاً)
+  if (d.featured_news && d.featured_news.title) {
+    const fn = d.featured_news;
+    const fnImage = document.getElementById("fnImage");
+    const fnTitle = document.getElementById("fnTitle");
+    const fnSources = document.getElementById("fnSources");
+    const fnReach = document.getElementById("fnReach");
+    if (fn.image) {
+      fnImage.style.backgroundImage = `url('${fn.image}')`;
+      fnImage.classList.remove("no-image");
+    } else {
+      fnImage.style.backgroundImage = "";
+      fnImage.classList.add("no-image");
+    }
+    fnTitle.textContent = fn.title;
+    const sourcesTxt = fn.source_count > 1
+      ? `📰 نُشر في ${fn.source_count} صحف`
+      : `📰 ${(fn.sources || [])[0] || 'صحيفة'}`;
+    fnSources.textContent = sourcesTxt;
+    fnReach.textContent = `وصول ${fmtBig(fn.reach || 0)}`;
   }
 
   // رسم الترند الحقيقي
@@ -707,6 +784,7 @@ function applyLiveData(d){
 
   // آخر تحديث
   if (d.cache_updated_at) {
+    window._lastUpdate = d.cache_updated_at;
     document.getElementById("lastupd").textContent = timeAgo(d.cache_updated_at);
   }
 }
@@ -717,7 +795,10 @@ function renderFeedLive(){
   const shown = items.slice(0, 5);
   list.innerHTML = shown.map(it => {
     const author = it.author ? `${it.platform} <span class="fi-dot">·</span> ${it.author}` : it.platform;
-    return `<div class="feed-item"><div class="fi-text">${it.text}</div><div class="fi-meta"><span class="fi-source">${author}</span></div></div>`;
+    // شارة عدد الصحف إذا نفس الخبر نُشر في أكثر من مصدر
+    const badge = (it.is_news && it.source_count && it.source_count > 1)
+      ? `<span class="fi-badge">نُشر في ${it.source_count} صحف</span>` : '';
+    return `<div class="feed-item"><div class="fi-text">${it.text}${badge}</div><div class="fi-meta"><span class="fi-source">${author}</span></div></div>`;
   }).join("");
 }
 
